@@ -1,11 +1,75 @@
 import wollok.game.*
 
 import example.pepita
+import example.personaje
+import example.manteca
+import example.segundoPersonaje
 
-program PepitaGame {
+program JohnParadigmas { 
 	game.title("Pepita")
-	game.height(10)
-	game.width(10)
+	game.height(45)
+	game.width(65)
+	game.cellSize(30)
+
+	game.addVisual(personaje)
+
+	game.addVisual(segundoPersonaje)
+
+	game.addVisual(manteca)
+	
+	game.say(personaje, "GENIO!")
+	
+	// Movimiento babosaVerde
+	keyboard.c().onPressDo({
+		personaje.centrar()
+	})
+
+	keyboard.w().onPressDo({
+		personaje.subir()
+	})
+
+	keyboard.s().onPressDo({
+		personaje.bajar()
+	})
+
+	keyboard.d().onPressDo({
+		personaje.derecha()
+	})
+
+	keyboard.a().onPressDo({
+		personaje.izquierda()
+	})
+
+	keyboard.g().onPressDo({
+		game.say(personaje, "GENIO!")
+	})
+
+	// Movimiento babosaAzuk
+	
+	keyboard.c().onPressDo({
+		segundoPersonaje.centrar()
+	})
+
+	keyboard.up().onPressDo({
+		segundoPersonaje.subir()
+	})
+
+	keyboard.down().onPressDo({
+		segundoPersonaje.bajar()
+	})
+
+	keyboard.right().onPressDo({
+		segundoPersonaje.derecha()
+	})
+
+	keyboard.left().onPressDo({
+		segundoPersonaje.izquierda()
+	})	
+
+
+	
+	game.schedule(3000, { game.say(personaje , "GENIOSSS!" ) } )
+	
 
 	game.start()
 }
