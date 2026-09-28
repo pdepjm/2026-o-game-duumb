@@ -1,75 +1,82 @@
 import wollok.game.*
 
 import example.pepita
-import example.personaje
-import example.manteca
-import example.segundoPersonaje
+import example.Jugador
+import example.reloj
+import example.Baldosa
+import example.jugadorVerde
+import example.jugadorAzul
 
 program JohnParadigmas { 
 	game.title("Pepita")
-	game.height(45)
-	game.width(65)
-	game.cellSize(30)
-
-	game.addVisual(personaje)
-
-	game.addVisual(segundoPersonaje)
-
-	game.addVisual(manteca)
+	game.height(11)
+	game.width(10)
+	game.cellSize(100)
+	game.boardGround("background3.png")
 	
-	game.say(personaje, "GENIO!")
+	(0 .. game.width() - 1).forEach({ x =>
+		(0 .. game.height() - 2).forEach({ y =>
+			game.addVisual(new Baldosa(position = game.at(x, y)))
+		})
+	})
+
+	game.addVisual(jugadorVerde)
+	game.addVisual(jugadorAzul)
+
+	// Lógica de pintado de baldosas
+	game.onCollideDo(jugadorVerde, { algo => algo.tePiso(jugadorVerde) })
+	game.onCollideDo(jugadorAzul, { algo => algo.tePiso(jugadorAzul) })
 	
 	// Movimiento babosaVerde
+
 	keyboard.c().onPressDo({
-		personaje.centrar()
+		jugadorVerde.centrar()
 	})
 
 	keyboard.w().onPressDo({
-		personaje.subir()
+		jugadorVerde.subir()
 	})
 
 	keyboard.s().onPressDo({
-		personaje.bajar()
+		jugadorVerde.bajar()
 	})
 
 	keyboard.d().onPressDo({
-		personaje.derecha()
+		jugadorVerde.derecha()
 	})
 
 	keyboard.a().onPressDo({
-		personaje.izquierda()
+		jugadorVerde.izquierda()
 	})
-
-	keyboard.g().onPressDo({
-		game.say(personaje, "GENIO!")
-	})
-
-	// Movimiento babosaAzuk
 	
+	// Movimiento babosaAzul
+
 	keyboard.c().onPressDo({
-		segundoPersonaje.centrar()
+		jugadorAzul.centrar()
 	})
 
 	keyboard.up().onPressDo({
-		segundoPersonaje.subir()
+		jugadorAzul.subir()
 	})
 
 	keyboard.down().onPressDo({
-		segundoPersonaje.bajar()
+		jugadorAzul.bajar()
 	})
 
 	keyboard.right().onPressDo({
-		segundoPersonaje.derecha()
+		jugadorAzul.derecha()
 	})
 
 	keyboard.left().onPressDo({
-		segundoPersonaje.izquierda()
-	})	
+		jugadorAzul.izquierda()
+	})
 
-
+	game.addVisual(reloj)
+	reloj.iniciar()
 	
-	game.schedule(3000, { game.say(personaje , "GENIOSSS!" ) } )
+	/*if (reloj.resultado() != null){ 
+		game.say(reloj , reloj.resultado())
+	}*/
 	
-
 	game.start()
 }
