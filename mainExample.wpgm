@@ -1,11 +1,82 @@
 import wollok.game.*
 
 import example.pepita
+import example.Jugador
+import example.reloj
+import example.Baldosa
+import example.jugadorVerde
+import example.jugadorAzul
 
-program PepitaGame {
+program JohnParadigmas { 
 	game.title("Pepita")
-	game.height(10)
+	game.height(11)
 	game.width(10)
+	game.cellSize(100)
+	game.boardGround("background3.png")
+	
+	(0 .. game.width() - 1).forEach({ x =>
+		(0 .. game.height() - 2).forEach({ y =>
+			game.addVisual(new Baldosa(position = game.at(x, y)))
+		})
+	})
 
+	game.addVisual(jugadorVerde)
+	game.addVisual(jugadorAzul)
+
+	// Lógica de pintado de baldosas
+	game.onCollideDo(jugadorVerde, { algo => algo.tePiso(jugadorVerde) })
+	game.onCollideDo(jugadorAzul, { algo => algo.tePiso(jugadorAzul) })
+	
+	// Movimiento babosaVerde
+
+	keyboard.c().onPressDo({
+		jugadorVerde.centrar()
+	})
+
+	keyboard.w().onPressDo({
+		jugadorVerde.subir()
+	})
+
+	keyboard.s().onPressDo({
+		jugadorVerde.bajar()
+	})
+
+	keyboard.d().onPressDo({
+		jugadorVerde.derecha()
+	})
+
+	keyboard.a().onPressDo({
+		jugadorVerde.izquierda()
+	})
+	
+	// Movimiento babosaAzul
+
+	keyboard.c().onPressDo({
+		jugadorAzul.centrar()
+	})
+
+	keyboard.up().onPressDo({
+		jugadorAzul.subir()
+	})
+
+	keyboard.down().onPressDo({
+		jugadorAzul.bajar()
+	})
+
+	keyboard.right().onPressDo({
+		jugadorAzul.derecha()
+	})
+
+	keyboard.left().onPressDo({
+		jugadorAzul.izquierda()
+	})
+
+	game.addVisual(reloj)
+	reloj.iniciar()
+	
+	/*if (reloj.resultado() != null){ 
+		game.say(reloj , reloj.resultado())
+	}*/
+	
 	game.start()
 }
