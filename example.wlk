@@ -1,13 +1,3 @@
-object pepita {
-    var energy = 100
-
-    method energy() = energy
-
-    method fly(minutes) {
-    energy = energy - minutes * 3
-    }
-}
-
 class Jugador {
     var property position
     const property color
@@ -25,54 +15,34 @@ class Jugador {
     method esPisable() = false
 
     method tePiso(otro) {
-        otro.position(otro.position())
-        self.position(self.position())
     }
 
     method pintarBaldosaActual() {
         game.getObjectsIn(position).forEach({ elemento => elemento.tePiso(self)})
     }
 
-    method puedoIrA(nuevaPos) {
-        if (reloj.tiempo() == 0) {
-            return false
+
+    method moverHacia(direccion) {
+        const nuevaPos = direccion.proximaPosicion(position)
+        
+        if (self.puedoIrA(nuevaPos)) {
+            position = nuevaPos
+            self.pintarBaldosaActual()
         }
-        // Retorna true solo si no hay ningún obstáculo (como otro jugador) o otros addons futuros ahi
+    }
+
+    method puedoIrA(nuevaPos) {
+        if (not juego.estaEnCurso()) return false 
+        
+        return tablero.validarPosicion(nuevaPos) and self.lugarLibre(nuevaPos)
+    }
+
+    method lugarLibre(nuevaPos) {
         return game.getObjectsIn(nuevaPos).all({ objeto => objeto.esPisable() })
     }
 
-    method subir() {
-        const nuevaPos = position.up(1)
-        // Si no se sale del mapa Y el lugar está libre, avanza
-        if (nuevaPos.y() < game.height() - 1 && self.puedoIrA(nuevaPos)){
-            position = nuevaPos
-            self.pintarBaldosaActual()
-        }
-    }
 
-    method bajar() {
-        const nuevaPos = position.down(1)
-        if (position.y() > 0 and self.puedoIrA(nuevaPos)) {
-            position = nuevaPos
-            self.pintarBaldosaActual()
-        }
-    }
 
-    method derecha() {
-        const nuevaPos = position.right(1)
-        if (position.x() < game.width() - 1 and self.puedoIrA(nuevaPos)) {
-            position = nuevaPos
-            self.pintarBaldosaActual()
-        }
-    }
-
-    method izquierda() {
-        const nuevaPos = position.left(1)
-        if (position.x() > 0 and self.puedoIrA(nuevaPos)) {
-            position = nuevaPos
-            self.pintarBaldosaActual()
-        }
-    }
 }
 
 const jugadorVerde = new Jugador(
@@ -87,41 +57,102 @@ const jugadorAzul = new Jugador(
     color = "azul"
 )
 
+object arriba {
+    method proximaPosicion(posicion) {
+        return posicion.up(1)
+    }
+}
+object abajo {
+    method proximaPosicion(posicion) {
+        return posicion.down(1)
+    }
+}
+object izquierda {
+    method proximaPosicion(posicion) {
+        return posicion.left(1)
+    }
+}
+object derecha {
+    method proximaPosicion(posicion) {
+        return posicion.right(1)
+    }
+}
+
+object tablero{
+
+    method crearBaldosas() {
+
+        (0 .. game.width() - 1).forEach({ x =>
+            (0 .. game.height() - 2).forEach({ y =>
+                game.addVisual(new Baldosa(position = game.at(x, y)))
+            })
+        })
+    }
+
+    method validarPosicion(posicion) {
+        return posicion.x().between(0, game.width() - 1) and posicion.y().between(0, game.height() - 2)  
+    }
+}
+
+object cartelFinal {
+    var property image = null
+    var property position = game.at(4,4)
+}
+
+object juego {
+    const jugadores = [jugadorVerde, jugadorAzul]
+
+    method iniciar() {
+
+        tablero.crearBaldosas()
+        game.addVisual(jugadorVerde)
+        game.addVisual(jugadorAzul)
+
+        game.addVisual(reloj)
+        reloj.iniciar()
+    }
+
+    method terminarJuego() {
+        reloj.detener()
+        self.darGanador()
+
+        game.schedule(4000, { game.stop() })
+    }
+
+    method darGanador() {
+        if (jugadorVerde.celdasGanadas() == jugadorAzul.celdasGanadas()){
+            game.sound("empate.mp3").play()
+            cartelFinal.image("cartel_empate.png")
+        }else{
+            const ganador = jugadores.max({ jugador => jugador.celdasGanadas() })
+            game.sound("win.mp3").play()
+            cartelFinal.image("cartel_" + ganador.color() + ".png")
+            
+        }
+        game.addVisual(cartelFinal)
+    }
+
+    method estaEnCurso() {
+        return reloj.tiempo() > 0
+    }
+
+
+}
 object reloj {
     var property tiempo = 30
     var property position = game.at(4, 10)
-    var property resultado = null
 
-    method text() {
-        if (resultado == null) {
-            return "Tiempo: " + tiempo.toString()
-        } else {
-            return resultado
-        }
-    }
+    method text() = if (tiempo > 0) "Tiempo: " + tiempo.toString() else " "
+
     method textColor() = "FFFFFF"
 
     method restarSegundo() {
     if (tiempo > 0) {
         tiempo -= 1
     } else {
-        self.tiempoAgotado()
+        juego.terminarJuego()
     }
 }
-
-    method tiempoAgotado() {
-        self.detener()
-        resultado = arbitro.darGanador()
-        
-        if(resultado != "Empate"){
-            game.sound("win.mp3").play()
-        }
-        else{
-            game.sound("empate.mp3").play()
-        }
-
-        game.schedule(4000, { game.stop() })
-    }
 
     method iniciar() {
         game.onTick(1000, "cronometro", { self.restarSegundo() })
@@ -129,21 +160,6 @@ object reloj {
 
     method detener() {
         game.removeTickEvent("cronometro")
-    }
-}
-
-
-object arbitro{
-    method darGanador(){
-        if (jugadorVerde.celdasGanadas() > jugadorAzul.celdasGanadas()){
-            return "Gano el verde"
-        }
-        else if (jugadorVerde.celdasGanadas() < jugadorAzul.celdasGanadas()){
-            return "Gano el azul"
-        }
-        else{
-            return "Empate"
-        }
     }
 }
 

@@ -1,82 +1,27 @@
 import wollok.game.*
 
-import example.pepita
-import example.Jugador
-import example.reloj
-import example.Baldosa
-import example.jugadorVerde
-import example.jugadorAzul
+import example.*
 
 program JohnParadigmas { 
-	game.title("Pepita")
+	game.title("Super mega color blast, la venganza de los colores. Ahora en 3D y 4K. Solo en cines")
 	game.height(11)
 	game.width(10)
 	game.cellSize(100)
 	game.boardGround("background3.png")
-	
-	(0 .. game.width() - 1).forEach({ x =>
-		(0 .. game.height() - 2).forEach({ y =>
-			game.addVisual(new Baldosa(position = game.at(x, y)))
-		})
-	})
 
-	game.addVisual(jugadorVerde)
-	game.addVisual(jugadorAzul)
+	juego.iniciar()
 
-	// Lógica de pintado de baldosas
-	game.onCollideDo(jugadorVerde, { algo => algo.tePiso(jugadorVerde) })
-	game.onCollideDo(jugadorAzul, { algo => algo.tePiso(jugadorAzul) })
-	
-	// Movimiento babosaVerde
-
-	keyboard.c().onPressDo({
-		jugadorVerde.centrar()
-	})
-
-	keyboard.w().onPressDo({
-		jugadorVerde.subir()
-	})
-
-	keyboard.s().onPressDo({
-		jugadorVerde.bajar()
-	})
-
-	keyboard.d().onPressDo({
-		jugadorVerde.derecha()
-	})
-
-	keyboard.a().onPressDo({
-		jugadorVerde.izquierda()
-	})
-	
-	// Movimiento babosaAzul
-
-	keyboard.c().onPressDo({
-		jugadorAzul.centrar()
-	})
-
-	keyboard.up().onPressDo({
-		jugadorAzul.subir()
-	})
-
-	keyboard.down().onPressDo({
-		jugadorAzul.bajar()
-	})
-
-	keyboard.right().onPressDo({
-		jugadorAzul.derecha()
-	})
-
-	keyboard.left().onPressDo({
-		jugadorAzul.izquierda()
-	})
-
-	game.addVisual(reloj)
-	reloj.iniciar()
-	
-	/*if (reloj.resultado() != null){ 
-		game.say(reloj , reloj.resultado())
-	}*/
+	// movimiento babosa verde (WASD)
+	keyboard.w().onPressDo({ jugadorVerde.moverHacia(arriba) })
+    keyboard.s().onPressDo({ jugadorVerde.moverHacia(abajo) })
+    keyboard.a().onPressDo({ jugadorVerde.moverHacia(izquierda) })
+    keyboard.d().onPressDo({ jugadorVerde.moverHacia(derecha) })
+    
+    // movimiento babosa azul (flechas)
+    keyboard.up().onPressDo({ jugadorAzul.moverHacia(arriba) })
+    keyboard.down().onPressDo({ jugadorAzul.moverHacia(abajo) })
+    keyboard.left().onPressDo({ jugadorAzul.moverHacia(izquierda) })
+    keyboard.right().onPressDo({ jugadorAzul.moverHacia(derecha) })
 	
 	game.start()
 }
