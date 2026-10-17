@@ -1,9 +1,181 @@
-import example.pepita
+import juego.*
+import jugador.*
+import tablero.*
+import baldosa.*
 
-describe "group of tests for pepita" {
 
-  test "pepita has initial energy" {
-    assert.equals(100, pepita.energy())
-  }
+describe "Tests de lógica de Baldosas, Movimiento y Puntuación" {
+    const jugadorTest = new Jugador(color = "verde", position = game.at(0, 0))
+    const otroJugador = new Jugador(color = "azul", position = game.at(2, 0))
+    
+    const baldosa00 = new Baldosa(position = game.at(0, 0))
+    const baldosa10 = new Baldosa(position = game.at(1, 0))
+    const baldosa20 = new Baldosa(position = game.at(2, 0))
 
+    method initialize() {
+        game.clear()
+        game.width(10)
+        game.height(11)
+        
+        game.addVisual(baldosa00)
+        game.addVisual(baldosa10)
+        game.addVisual(baldosa20)
+        
+        game.addVisual(jugadorTest)
+        game.addVisual(otroJugador)
+    }
+
+    test "Al moverse a una baldosa neutra, el jugador gana una celda y la baldosa cambia de color" {
+        jugadorTest.moverHacia(derecha) // Se mueve de (0,0) a (1,0)
+
+        assert.equals(game.at(1, 0), jugadorTest.position())
+        assert.equals(1, jugadorTest.celdasGanadas())
+        assert.equals("verde", baldosa10.color())
+        assert.equals(jugadorTest, baldosa10.duenioActual())
+    }
+
+    test "Si un jugador se mueve a una baldosa del rival, le roba la celda (sumando él y restando el otro)" {
+        // El jugador verde avanza a (1,0) y la pinta
+        jugadorTest.moverHacia(derecha)
+        // El jugador verde retrocede a (0,0) dejando libre (1,0) y pintando también (0,0)
+        jugadorTest.moverHacia(izquierda)
+        assert.equals(2, jugadorTest.celdasGanadas())
+        
+        // El jugador azul avanza desde (2,0) a (1,0), pisando la baldosa que era del verde
+        otroJugador.moverHacia(izquierda)
+
+        // Verificación: verde pierde 1 celda (queda en 1) y azul gana 1
+        assert.equals(1, jugadorTest.celdasGanadas())
+        assert.equals(1, otroJugador.celdasGanadas())
+        assert.equals("azul", baldosa10.color())
+        assert.equals(otroJugador, baldosa10.duenioActual())
+    }
+    
+    test "Volver a pisar una baldosa que ya es propia no suma puntos extra" {
+        jugadorTest.moverHacia(derecha)   // Pinta (1,0) -> 1 celda
+        jugadorTest.moverHacia(izquierda) // Pinta (0,0) -> 2 celdas
+        jugadorTest.moverHacia(derecha)   // Vuelve a pisar (1,0) que ya es suya
+
+        assert.equals(2, jugadorTest.celdasGanadas())
+    }
+
+    test "Un jugador no puede moverse a una casilla ocupada por otro jugador" {
+        jugadorTest.moverHacia(derecha) // Verde va a (1,0)
+        otroJugador.moverHacia(izquierda) // Azul intenta ir de (2,0) a (1,0), pero está Verde
+
+        // Azul no pudo avanzar, se queda en (2,0) y no roba la baldosa
+        assert.equals(game.at(2, 0), otroJugador.position())
+        assert.equals(0, otroJugador.celdasGanadas())
+        assert.equals("verde", baldosa10.color())
+    }
+}
+
+
+describe "Tests de Direcciones y Límites del Tablero" {
+    
+    method initialize() {
+        game.clear()
+        game.width(10)
+        game.height(11)
+    }
+
+    test "Los objetos de dirección calculan bien la próxima coordenada" {
+        const posInicial = game.at(5, 5)
+        
+        assert.equals(game.at(5, 6), arriba.proximaPosicion(posInicial))
+        assert.equals(game.at(5, 4), abajo.proximaPosicion(posInicial))
+        assert.equals(game.at(6, 5), derecha.proximaPosicion(posInicial))
+        assert.equals(game.at(4, 5), izquierda.proximaPosicion(posInicial))
+    }
+
+    test "El tablero valida correctamente qué posiciones están dentro y fuera del mapa" {
+        // Casos válidos (adentro del mapa)
+        assert.that(tablero.validarPosicion(game.at(0, 0)))
+        assert.that(tablero.validarPosicion(game.at(9, 9))) 
+        
+        // Casos inválidos (fuera de los bordes)
+        assert.notThat(tablero.validarPosicion(game.at(-1, 5))) // Se pasó por la izquierda
+        assert.notThat(tablero.validarPosicion(game.at(10, 5))) // Se pasó por la derecha
+        assert.notThat(tablero.validarPosicion(game.at(5, 10))) // Se pasó por arriba (el alto jugable es 9 por el reloj)
+    }
+}
+
+
+describe "Tests de Baldosas Troll" {
+    const baldosa00 = new Baldosa(position = game.at(0, 0))
+    const baldosa10 = new Baldosa(position = game.at(1, 0))
+    const baldosa20 = new Baldosa(position = game.at(2, 0))
+
+    method initialize() {
+        game.clear()
+        game.width(10)
+        game.height(11)
+
+        jugadorVerde.position(game.at(0, 0))
+        jugadorVerde.celdasGanadas(0)
+        jugadorAzul.position(game.at(2, 0))
+        jugadorAzul.celdasGanadas(0)
+
+        game.addVisual(baldosa00)
+        game.addVisual(baldosa10)
+        game.addVisual(baldosa20)
+
+        game.addVisual(jugadorVerde)
+        game.addVisual(jugadorAzul)
+    }
+
+    test "Una baldosa cambia su estado e imagen al volverse troll" {
+        assert.notThat(baldosa10.esTroll())
+        assert.equals("baldosa_neutra.png", baldosa10.image())
+
+        baldosa10.volverseTroll()
+
+        assert.that(baldosa10.esTroll())
+        assert.equals("baldosa_troll_neutra.png", baldosa10.image())
+    }
+
+    test "Al pisar una baldosa troll neutra, se pinta del color del rival, suma punto al rival y deja de ser troll" {
+        baldosa10.volverseTroll()
+
+        jugadorVerde.moverHacia(derecha) // Verde pisa (1,0) que es troll
+
+        assert.equals(0, jugadorVerde.celdasGanadas())
+        assert.equals(1, jugadorAzul.celdasGanadas())
+        assert.equals("azul", baldosa10.color())
+        assert.equals(jugadorAzul, baldosa10.duenioActual())
+        assert.notThat(baldosa10.esTroll())
+        assert.equals("baldosa_azul.png", baldosa10.image())
+    }
+
+    test "Si un jugador pisa una baldosa propia que se volvió troll, pierde la celda, se la regala al rival y deja de ser troll" {
+        jugadorVerde.moverHacia(derecha)   // Verde pinta (1,0) -> tiene 1
+        jugadorVerde.moverHacia(izquierda) // Verde pinta (0,0) -> tiene 2
+        assert.equals(2, jugadorVerde.celdasGanadas())
+
+        baldosa10.volverseTroll()
+        assert.equals("baldosa_troll_verde.png", baldosa10.image())
+
+        // Verde vuelve a pisar (1,0) que ahora es troll
+        jugadorVerde.moverHacia(derecha)
+
+        assert.equals(1, jugadorVerde.celdasGanadas())
+        assert.equals(1, jugadorAzul.celdasGanadas())
+        assert.equals("azul", baldosa10.color())
+        assert.equals(jugadorAzul, baldosa10.duenioActual())
+        assert.notThat(baldosa10.esTroll())
+    }
+
+    test "Una baldosa troll vuelve a ser una baldosa normal después de haber sido pisada una vez" {
+        baldosa10.volverseTroll()
+        
+
+        jugadorVerde.moverHacia(derecha)   // Pisa la troll en (1,0): se pinta azul y deja de ser troll
+        jugadorVerde.moverHacia(izquierda) // Va a (0,0) y la pinta verde
+        jugadorVerde.moverHacia(derecha)   // Vuelve a pisar (1,0), que ahora es normal, y se la roba al azul
+
+        assert.equals(2, jugadorVerde.celdasGanadas())
+        assert.equals(0, jugadorAzul.celdasGanadas())
+        assert.equals("verde", baldosa10.color())
+        assert.equals(jugadorVerde, baldosa10.duenioActual())
+    }
 }
