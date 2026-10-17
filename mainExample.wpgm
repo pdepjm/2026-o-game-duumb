@@ -1,9 +1,10 @@
 import wollok.game.*
 
-import example.*
+import jugador.*
+import juego.*
 
 program JohnParadigmas { 
-	game.title("Super mega color blast, la venganza de los colores. Ahora en 3D y 4K. Solo en cines")
+	game.title("Super mega color blast, la venganza de los colores. Ahora en 3D y 4K Exclusivo estreno solo en wollok game 2027")
 	game.height(11)
 	game.width(10)
 	game.cellSize(100)
@@ -25,3 +26,5 @@ program JohnParadigmas {
 	
 	game.start()
 }
+
+
