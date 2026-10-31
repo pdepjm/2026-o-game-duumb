@@ -1,14 +1,38 @@
 import baldosa.*
 
-object tablero{
+object tablero {
+    const baldosas = []
+
+    method baldosas() = baldosas
+
+    method baldosasPisables() = baldosas.filter({ b => b.esPisable() })
 
     method crearBaldosas() {
-
         (0 .. game.width() - 1).forEach({ x =>
             (0 .. game.height() - 2).forEach({ y =>
-                game.addVisual(new Baldosa(position = game.at(x, y)))
+                self.agregarBaldosa(new Baldosa(position = game.at(x, y)))
             })
         })
+    }
+
+    method agregarBaldosa(unaBaldosa) {
+        baldosas.add(unaBaldosa)
+        game.addVisual(unaBaldosa)
+    }
+
+    method reemplazarBaldosa(anterior, nueva) {
+        baldosas.remove(anterior)
+        game.removeVisual(anterior)
+        self.agregarBaldosa(nueva)
+    }
+
+    method baldosaAleatoria() = baldosas.anyOne()
+
+    method trampearBaldosaAleatoria() {
+        const pisables = self.baldosasPisables()
+        if (not pisables.isEmpty()) {
+            pisables.anyOne().volverseTrampa()
+        }
     }
 
     method validarPosicion(posicion) {
@@ -18,11 +42,24 @@ object tablero{
 
 object cartelFinal {
     var property image = null
-    var property position = game.at(3,3)
+    var property position = game.at(3, 3)
+
+    method mostrarEmpate() {
+        self.mostrar("cartel_empate.png", "empate.mp3")
+    }
+
+    method mostrarGanador(ganador) {
+        self.mostrar("cartel_" + ganador.color() + ".png", "win.mp3")
+    }
+
+    method mostrar(nombreImagen, archivoSonido) {
+        image = nombreImagen
+        game.addVisual(self)
+        game.sound(archivoSonido).play()
+    }
 }
 
 object spawnerDeBaldosas {
-
     method iniciar() {
         game.onTick(4000, "spawnerTrampas", { self.generarTrampaRandom() })
     }
@@ -32,24 +69,6 @@ object spawnerDeBaldosas {
     }
 
     method generarTrampaRandom() {
-        // 1. Elegimos coordenadas al azar dentro del mapa jugable
-        const xRandom = (0 .. game.width() - 1).anyOne()
-        const yRandom = (0 .. game.height() - 2).anyOne()
-        const posRandom = game.at(xRandom, yRandom)
-
-        // 2. Agarramos todo lo que haya en esa celda
-        const cosasAhi = game.getObjectsIn(posRandom)
-
-        // 3. Filtramos para quedarnos SOLO con la baldosa (ignoramos jugadores)
-        const baldosasAhi = cosasAhi.filter({ obj => obj.esBaldosa() })
-
-        if (not baldosasAhi.isEmpty()) {
-            const baldosa = baldosasAhi.first()
-
-            // Solo la convertimos si no era ya una trampa
-            if (not baldosa.esTroll()) {
-                baldosa.volverseTroll()
-            }
-        }
+        tablero.trampearBaldosaAleatoria()
     }
 }
