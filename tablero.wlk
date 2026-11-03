@@ -5,7 +5,7 @@ object tablero {
 
     method baldosas() = baldosas
 
-    method baldosasPisables() = baldosas.filter({ b => b.esPisable() })
+    method baldosasDisponibles() = baldosas.filter({ b => b.estaDisponible() })
 
     method crearBaldosas() {
         (0 .. game.width() - 1).forEach({ x =>
@@ -20,18 +20,12 @@ object tablero {
         game.addVisual(unaBaldosa)
     }
 
-    method reemplazarBaldosa(anterior, nueva) {
-        baldosas.remove(anterior)
-        game.removeVisual(anterior)
-        self.agregarBaldosa(nueva)
-    }
-
     method baldosaAleatoria() = baldosas.anyOne()
 
-    method trampearBaldosaAleatoria() {
-        const pisables = self.baldosasPisables()
-        if (not pisables.isEmpty()) {
-            pisables.anyOne().volverseTrampa()
+    method alterarBaldosaAleatoria(nuevoTipo) {
+        const disponibles = self.baldosasDisponibles()
+        if (not disponibles.isEmpty()) {
+            disponibles.anyOne().aplicarEfectoSorpresa(nuevoTipo)
         }
     }
 
@@ -60,15 +54,17 @@ object cartelFinal {
 }
 
 object spawnerDeBaldosas {
+    const tiposEspeciales = [new TipoTrampa(), new TipoPared()]
+
     method iniciar() {
-        game.onTick(4000, "spawnerTrampas", { self.generarTrampaRandom() })
+        game.onTick(2000, "spawnearBaldosasEspeciales", { self.generarEfectoRandom() })
     }
 
     method detener() {
-        game.removeTickEvent("spawnerTrampas")
+        game.removeTickEvent("spawnearBaldosasEspeciales")
     }
 
-    method generarTrampaRandom() {
-        tablero.trampearBaldosaAleatoria()
+    method generarEfectoRandom() {
+        tablero.alterarBaldosaAleatoria(tiposEspeciales.anyOne())
     }
 }

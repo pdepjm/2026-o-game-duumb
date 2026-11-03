@@ -101,7 +101,7 @@ describe "Tests de Direcciones y Límites del Tablero" {
 }
 
 
-describe "Tests de Baldosas Troll" {
+describe "Tests de Baldosas Especiales (Trampa y Pared)" {
     const baldosa00 = new Baldosa(position = game.at(0, 0))
     const baldosa10 = new Baldosa(position = game.at(1, 0))
     const baldosa20 = new Baldosa(position = game.at(2, 0))
@@ -124,52 +124,48 @@ describe "Tests de Baldosas Troll" {
         game.addVisual(jugadorAzul)
     }
 
-    test "Una baldosa cambia su estado e imagen al volverse troll" {
-        assert.notThat(baldosa10.esTroll())
+    test "Una baldosa cambia su tipo e imagen al volverse trampa" {
         assert.equals("baldosa_neutra.png", baldosa10.image())
 
-        baldosa10.volverseTroll()
+        baldosa10.aplicarEfectoSorpresa(new TipoTrampa())
 
-        assert.that(baldosa10.esTroll())
         assert.equals("baldosa_troll_neutra.png", baldosa10.image())
     }
 
-    test "Al pisar una baldosa troll neutra, se pinta del color del rival, suma punto al rival y deja de ser troll" {
-        baldosa10.volverseTroll()
+    test "Al pisar una baldosa trampa neutra, se pinta del color del rival, suma punto al rival y vuelve a ser normal" {
+        baldosa10.aplicarEfectoSorpresa(new TipoTrampa())
 
-        jugadorVerde.moverHacia(derecha) // Verde pisa (1,0) que es troll
+        jugadorVerde.moverHacia(derecha) // Verde pisa (1,0) que es trampa
 
         assert.equals(0, jugadorVerde.celdasGanadas())
         assert.equals(1, jugadorAzul.celdasGanadas())
         assert.equals("azul", baldosa10.color())
         assert.equals(jugadorAzul, baldosa10.duenioActual())
-        assert.notThat(baldosa10.esTroll())
         assert.equals("baldosa_azul.png", baldosa10.image())
     }
 
-    test "Si un jugador pisa una baldosa propia que se volvió troll, pierde la celda, se la regala al rival y deja de ser troll" {
+    test "Si un jugador pisa una baldosa propia que se volvió trampa, pierde la celda, se la regala al rival y vuelve a ser normal" {
         jugadorVerde.moverHacia(derecha)   // Verde pinta (1,0) -> tiene 1
         jugadorVerde.moverHacia(izquierda) // Verde pinta (0,0) -> tiene 2
         assert.equals(2, jugadorVerde.celdasGanadas())
 
-        baldosa10.volverseTroll()
+        baldosa10.aplicarEfectoSorpresa(new TipoTrampa())
         assert.equals("baldosa_troll_verde.png", baldosa10.image())
 
-        // Verde vuelve a pisar (1,0) que ahora es troll
+        // Verde vuelve a pisar (1,0) que ahora es trampa
         jugadorVerde.moverHacia(derecha)
 
         assert.equals(1, jugadorVerde.celdasGanadas())
         assert.equals(1, jugadorAzul.celdasGanadas())
         assert.equals("azul", baldosa10.color())
         assert.equals(jugadorAzul, baldosa10.duenioActual())
-        assert.notThat(baldosa10.esTroll())
+        assert.equals("baldosa_azul.png", baldosa10.image())
     }
 
-    test "Una baldosa troll vuelve a ser una baldosa normal después de haber sido pisada una vez" {
-        baldosa10.volverseTroll()
-        
+    test "Una baldosa trampa vuelve a ser una baldosa normal después de haber sido pisada una vez" {
+        baldosa10.aplicarEfectoSorpresa(new TipoTrampa())
 
-        jugadorVerde.moverHacia(derecha)   // Pisa la troll en (1,0): se pinta azul y deja de ser troll
+        jugadorVerde.moverHacia(derecha)   // Pisa la trampa en (1,0): se pinta azul y vuelve a ser normal
         jugadorVerde.moverHacia(izquierda) // Va a (0,0) y la pinta verde
         jugadorVerde.moverHacia(derecha)   // Vuelve a pisar (1,0), que ahora es normal, y se la roba al azul
 
@@ -177,5 +173,32 @@ describe "Tests de Baldosas Troll" {
         assert.equals(0, jugadorAzul.celdasGanadas())
         assert.equals("verde", baldosa10.color())
         assert.equals(jugadorVerde, baldosa10.duenioActual())
+    }
+
+    test "Una baldosa de tipo pared no es pisable, bloquea el paso y si tenía dueño le quita el punto" {
+        jugadorVerde.moverHacia(derecha)   // Verde pinta (1,0) -> tiene 1
+        jugadorVerde.moverHacia(izquierda) // Verde pinta (0,0) -> tiene 2
+        assert.equals(2, jugadorVerde.celdasGanadas())
+
+        // (1,0) se convierte en pared
+        baldosa10.aplicarEfectoSorpresa(new TipoPared())
+
+        assert.notThat(baldosa10.esPisable())
+        assert.equals("baldosa_pared.png", baldosa10.image())
+        assert.equals(1, jugadorVerde.celdasGanadas())
+        assert.equals(null, baldosa10.duenioActual())
+
+        jugadorVerde.moverHacia(derecha) // Intenta avanzar a (1,0) pero es pared
+        assert.equals(game.at(0, 0), jugadorVerde.position())
+    }
+
+    test "No se solapan baldosas especiales: solo puede cambiar de tipo desde TipoNormal" {
+        baldosa10.aplicarEfectoSorpresa(new TipoTrampa())
+        assert.notThat(baldosa10.estaDisponible())
+
+        // Intentar transformar una trampa en pared no la modifica
+        baldosa10.aplicarEfectoSorpresa(new TipoPared())
+        assert.that(baldosa10.esPisable())
+        assert.equals("baldosa_troll_neutra.png", baldosa10.image())
     }
 }
