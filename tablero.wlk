@@ -20,8 +20,6 @@ object tablero {
         game.addVisual(unaBaldosa)
     }
 
-    method baldosaAleatoria() = baldosas.anyOne()
-
     method alterarBaldosaAleatoria(nuevoTipo) {
         const disponibles = self.baldosasDisponibles()
         if (not disponibles.isEmpty()) {
