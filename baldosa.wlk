@@ -5,24 +5,17 @@ class Baldosa {
     var property color = "neutra"
     var property position
     var property duenioActual = null
-
-    method esPisable() = true
-
-    method image() = "baldosa_" + color + ".png"
-
-    method tePiso(jugador) {
-        self.pintarPara(jugador)
-    }
-
-    method pintarPara(jugador) {
-        if (duenioActual != jugador) {
-            self.cambiarDuenio(jugador)
-        }
-    }
+    var property tipo = new TipoNormal() // Colaborador polimórfico
 
     method cambiarDuenio(nuevoDuenio) {
         self.descontarDuenioAnterior()
         self.asignarNuevoDuenio(nuevoDuenio)
+    }
+
+    method quitarDuenio() {
+        self.descontarDuenioAnterior()
+        duenioActual = null
+        color = "neutra"
     }
 
     method descontarDuenioAnterior() {
@@ -37,42 +30,70 @@ class Baldosa {
         nuevoDuenio.ganarCelda()
     }
 
-    // Polimorfismo para transformar la baldosa en trampa
-    method volverseTrampa() {
-        tablero.reemplazarBaldosa(self, new BaldosaTrampa(
-            position = position,
-            color = color,
-            duenioActual = duenioActual
-        ))
+    method esPisable() = tipo.esPisable()
+    method admiteEfecto() = tipo.admiteEfecto()
+    method estaDisponible() = self.admiteEfecto() and game.getObjectsIn(position).all({ obj => obj.esPisable() })
+    method image() = tipo.imagePara(color)
+
+    method tePiso(jugador) {
+        tipo.tePiso(self, jugador)
+    }
+
+    method cambiarTipo(nuevoTipo) {
+        tipo = nuevoTipo
+        nuevoTipo.alAplicarseEn(self)
+    }
+
+    method aplicarEfectoSorpresa(nuevoTipo) {
+        tipo.aplicarEfectoSorpresa(self, nuevoTipo)
+    }
+
+    // Métodos propios de pintado de la baldosa
+    method pintarPara(jugador) {
+        if (duenioActual != jugador) {
+            self.cambiarDuenio(jugador)
+        }
     }
 }
 
-class BaldosaTrampa inherits Baldosa {
-    override method image() = "baldosa_troll_" + color + ".png"
+class TipoNormal {
+    method esPisable() = true
+    method admiteEfecto() = true
+    method imagePara(color) = "baldosa_" + color + ".png"
 
-    override method tePiso(jugador) {
-        // Al pisar una trampa, se beneficia al rival en vez del jugador que pisó
-        super(juego.rivalDe(jugador))
-        self.desactivar()
+    method tePiso(baldosa, jugador) {
+        baldosa.pintarPara(jugador)
     }
 
-    method desactivar() {
-        tablero.reemplazarBaldosa(self, new Baldosa(
-            position = position,
-            color = color,
-            duenioActual = duenioActual
-        ))
+    method aplicarEfectoSorpresa(baldosa, nuevoTipo) {
+        baldosa.cambiarTipo(nuevoTipo)
     }
 
-    override method volverseTrampa() {
-        // Si ya es trampa, no hace nada (evita if)
+    method alAplicarseEn(baldosa) {}
+}
+
+class TipoTrampa inherits TipoNormal {
+    override method admiteEfecto() = false
+    override method imagePara(color) = "baldosa_troll_" + color + ".png"
+
+    override method tePiso(baldosa, jugador) {
+        super(baldosa, juego.rivalDe(jugador))
+        baldosa.cambiarTipo(new TipoNormal()) // Al pisarla vuelve a ser normal sin addVisual
+    }
+
+    override method aplicarEfectoSorpresa(baldosa, nuevoTipo) {
+        // Si ya tiene un efecto especial, no se pisa con otro (sin usar if)
     }
 }
 
-// Nueva subclase de ejemplo pedida por el docente (paredes / obstáculos)
-class BaldosaPared inherits Baldosa {
+class TipoPared inherits TipoNormal {
     override method esPisable() = false
-    override method image() = "baldosa_pared.png"
-    override method tePiso(jugador) {}
-    override method volverseTrampa() {}
+    override method admiteEfecto() = false
+    override method imagePara(color) = "baldosa_pared.png"
+    override method tePiso(baldosa, jugador) {}
+    override method aplicarEfectoSorpresa(baldosa, nuevoTipo) {}
+
+    override method alAplicarseEn(baldosa) {
+        baldosa.quitarDuenio()
+    }
 }

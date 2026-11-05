@@ -3,6 +3,7 @@ import tablero.*
 
 object juego {
     const jugadores = [jugadorVerde, jugadorAzul]
+    const puntajes = [puntajeVerde, puntajeAzul]
 
     method iniciar() {
 
@@ -24,18 +25,27 @@ object juego {
         game.schedule(4000, { game.stop() })
     }
 
-    method darGanador() {
-        if (jugadorVerde.celdasGanadas() == jugadorAzul.celdasGanadas()){
-            game.sound("empate.mp3").play()
-            cartelFinal.image("cartel_empate.png")
-        }else{
-            const ganador = jugadores.max({ jugador => jugador.celdasGanadas() })
-            game.sound("win.mp3").play()
-            cartelFinal.image("cartel_" + ganador.color() + ".png")
+     method darGanador() {
+        if (self.hayEmpate()) {
+            cartelFinal.mostrarEmpate()
+        } else {
+            cartelFinal.mostrarGanador(self.ganador())
         }
-        game.addVisual(cartelFinal)
-        game.addVisual(puntajeVerde)
-        game.addVisual(puntajeAzul)
+        self.mostrarPuntajes()
+    }
+    
+    method maximoPuntaje() = jugadores.map({ j => j.celdasGanadas() }).max()
+
+    method ganadores() {
+        const maxPuntos = self.maximoPuntaje()
+        return jugadores.filter({ j => j.celdasGanadas() == maxPuntos })
+    }
+    method hayEmpate() = self.ganadores().size() > 1
+
+    method ganador() = self.ganadores().first()
+
+    method mostrarPuntajes() {
+        puntajes.forEach({ puntaje => game.addVisual(puntaje) })
     }
 
     method estaEnCurso() {
