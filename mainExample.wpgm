@@ -1,11 +1,18 @@
 import wollok.game.*
 
-import example.pepita
+import jugador.*
+import juego.*
 
-program PepitaGame {
-	game.title("Pepita")
-	game.height(10)
+program JohnParadigmas { 
+	game.title("Super mega color blast, la venganza de los colores. Ahora en 3D y 4K Exclusivo estreno solo en wollok game 2027")
+	game.height(11)
 	game.width(10)
+	game.cellSize(100)
+	game.boardGround("menu.png")
 
+	juego.iniciar()
+	
 	game.start()
 }
+
+

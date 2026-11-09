@@ -1,9 +1,494 @@
-import example.pepita
+import juego.*
+import jugador.*
+import tablero.*
+import baldosa.*
+import menu.*
 
-describe "group of tests for pepita" {
 
-  test "pepita has initial energy" {
-    assert.equals(100, pepita.energy())
-  }
+describe "Tests de lógica de Baldosas, Movimiento y Puntuación" {
+    const jugadorTest = new Jugador(color = "verde", position = game.at(0, 0))
+    const otroJugador = new Jugador(color = "azul", position = game.at(2, 0))
+    
+    const baldosa00 = new Baldosa(position = game.at(0, 0))
+    const baldosa10 = new Baldosa(position = game.at(1, 0))
+    const baldosa20 = new Baldosa(position = game.at(2, 0))
 
+    method initialize() {
+        game.clear()
+        game.width(10)
+        game.height(11)
+        
+        game.addVisual(baldosa00)
+        game.addVisual(baldosa10)
+        game.addVisual(baldosa20)
+        
+        game.addVisual(jugadorTest)
+        game.addVisual(otroJugador)
+    }
+
+    test "Al moverse a una baldosa neutra, el jugador gana una celda y la baldosa cambia de color" {
+        jugadorTest.moverHacia(derecha) // Se mueve de (0,0) a (1,0)
+
+        assert.equals(game.at(1, 0), jugadorTest.position())
+        assert.equals(1, jugadorTest.celdasGanadas())
+        assert.equals("verde", baldosa10.color())
+        assert.equals(jugadorTest, baldosa10.duenioActual())
+    }
+
+    test "Si un jugador se mueve a una baldosa del rival, le roba la celda (sumando él y restando el otro)" {
+        // El jugador verde avanza a (1,0) y la pinta
+        jugadorTest.moverHacia(derecha)
+        // El jugador verde retrocede a (0,0) dejando libre (1,0) y pintando también (0,0)
+        jugadorTest.moverHacia(izquierda)
+        assert.equals(2, jugadorTest.celdasGanadas())
+        
+        // El jugador azul avanza desde (2,0) a (1,0), pisando la baldosa que era del verde
+        otroJugador.moverHacia(izquierda)
+
+        // Verificación: verde pierde 1 celda (queda en 1) y azul gana 1
+        assert.equals(1, jugadorTest.celdasGanadas())
+        assert.equals(1, otroJugador.celdasGanadas())
+        assert.equals("azul", baldosa10.color())
+        assert.equals(otroJugador, baldosa10.duenioActual())
+    }
+    
+    test "Volver a pisar una baldosa que ya es propia no suma puntos extra" {
+        jugadorTest.moverHacia(derecha)   // Pinta (1,0) -> 1 celda
+        jugadorTest.moverHacia(izquierda) // Pinta (0,0) -> 2 celdas
+        jugadorTest.moverHacia(derecha)   // Vuelve a pisar (1,0) que ya es suya
+
+        assert.equals(2, jugadorTest.celdasGanadas())
+    }
+
+    test "Un jugador no puede moverse a una casilla ocupada por otro jugador" {
+        jugadorTest.moverHacia(derecha) // Verde va a (1,0)
+        otroJugador.moverHacia(izquierda) // Azul intenta ir de (2,0) a (1,0), pero está Verde
+
+        // Azul no pudo avanzar, se queda en (2,0) y no roba la baldosa
+        assert.equals(game.at(2, 0), otroJugador.position())
+        assert.equals(0, otroJugador.celdasGanadas())
+        assert.equals("verde", baldosa10.color())
+    }
 }
+
+
+describe "Tests de Direcciones y Límites del Tablero" {
+    
+    method initialize() {
+        game.clear()
+        game.width(10)
+        game.height(11)
+    }
+
+    test "Los objetos de dirección calculan bien la próxima coordenada" {
+        const posInicial = game.at(5, 5)
+        
+        assert.equals(game.at(5, 6), arriba.proximaPosicion(posInicial))
+        assert.equals(game.at(5, 4), abajo.proximaPosicion(posInicial))
+        assert.equals(game.at(6, 5), derecha.proximaPosicion(posInicial))
+        assert.equals(game.at(4, 5), izquierda.proximaPosicion(posInicial))
+    }
+
+    test "El tablero valida correctamente qué posiciones están dentro y fuera del mapa" {
+        // Casos válidos (adentro del mapa)
+        assert.that(tablero.validarPosicion(game.at(0, 0)))
+        assert.that(tablero.validarPosicion(game.at(9, 9))) 
+        
+        // Casos inválidos (fuera de los bordes)
+        assert.notThat(tablero.validarPosicion(game.at(-1, 5))) // Se pasó por la izquierda
+        assert.notThat(tablero.validarPosicion(game.at(10, 5))) // Se pasó por la derecha
+        assert.notThat(tablero.validarPosicion(game.at(5, 10))) // Se pasó por arriba (el alto jugable es 9 por el reloj)
+    }
+}
+
+
+describe "Tests de Baldosas Especiales (Trampa y Pared)" {
+    const baldosa00 = new Baldosa(position = game.at(0, 0))
+    const baldosa10 = new Baldosa(position = game.at(1, 0))
+    const baldosa20 = new Baldosa(position = game.at(2, 0))
+
+    method initialize() {
+        game.clear()
+        game.width(10)
+        game.height(11)
+
+        jugadorVerde.position(game.at(0, 0))
+        jugadorVerde.celdasGanadas(0)
+        jugadorAzul.position(game.at(2, 0))
+        jugadorAzul.celdasGanadas(0)
+
+        game.addVisual(baldosa00)
+        game.addVisual(baldosa10)
+        game.addVisual(baldosa20)
+
+        game.addVisual(jugadorVerde)
+        game.addVisual(jugadorAzul)
+    }
+
+    test "Una baldosa cambia su tipo e imagen al volverse trampa" {
+        assert.equals("baldosa_neutra.png", baldosa10.image())
+
+        baldosa10.aplicarEfectoSorpresa(new TipoTrampa())
+
+        assert.equals("baldosa_troll_neutra.png", baldosa10.image())
+    }
+
+    test "Al pisar una baldosa trampa neutra, se pinta del color del rival, suma punto al rival y vuelve a ser normal" {
+        baldosa10.aplicarEfectoSorpresa(new TipoTrampa())
+
+        jugadorVerde.moverHacia(derecha) // Verde pisa (1,0) que es trampa
+
+        assert.equals(0, jugadorVerde.celdasGanadas())
+        assert.equals(1, jugadorAzul.celdasGanadas())
+        assert.equals("azul", baldosa10.color())
+        assert.equals(jugadorAzul, baldosa10.duenioActual())
+        assert.equals("baldosa_azul.png", baldosa10.image())
+    }
+
+    test "Si un jugador pisa una baldosa propia que se volvió trampa, pierde la celda, se la regala al rival y vuelve a ser normal" {
+        jugadorVerde.moverHacia(derecha)   // Verde pinta (1,0) -> tiene 1
+        jugadorVerde.moverHacia(izquierda) // Verde pinta (0,0) -> tiene 2
+        assert.equals(2, jugadorVerde.celdasGanadas())
+
+        baldosa10.aplicarEfectoSorpresa(new TipoTrampa())
+        assert.equals("baldosa_troll_verde.png", baldosa10.image())
+
+        // Verde vuelve a pisar (1,0) que ahora es trampa
+        jugadorVerde.moverHacia(derecha)
+
+        assert.equals(1, jugadorVerde.celdasGanadas())
+        assert.equals(1, jugadorAzul.celdasGanadas())
+        assert.equals("azul", baldosa10.color())
+        assert.equals(jugadorAzul, baldosa10.duenioActual())
+        assert.equals("baldosa_azul.png", baldosa10.image())
+    }
+
+    test "Una baldosa trampa vuelve a ser una baldosa normal después de haber sido pisada una vez" {
+        baldosa10.aplicarEfectoSorpresa(new TipoTrampa())
+
+        jugadorVerde.moverHacia(derecha)   // Pisa la trampa en (1,0): se pinta azul y vuelve a ser normal
+        jugadorVerde.moverHacia(izquierda) // Va a (0,0) y la pinta verde
+        jugadorVerde.moverHacia(derecha)   // Vuelve a pisar (1,0), que ahora es normal, y se la roba al azul
+
+        assert.equals(2, jugadorVerde.celdasGanadas())
+        assert.equals(0, jugadorAzul.celdasGanadas())
+        assert.equals("verde", baldosa10.color())
+        assert.equals(jugadorVerde, baldosa10.duenioActual())
+    }
+
+        test "Una baldosa de tipo pared no es pisable, bloquea el paso y si tenía dueño le quita el punto" {
+        jugadorVerde.moverHacia(derecha)   // Verde pinta (1,0) -> tiene 1
+        jugadorVerde.moverHacia(izquierda) // Verde pinta (0,0) -> tiene 2
+        assert.equals(2, jugadorVerde.celdasGanadas())
+
+        // (1,0) se convierte en pared
+        baldosa10.aplicarEfectoSorpresa(new TipoPared())
+
+        assert.notThat(baldosa10.esPisable())
+        assert.equals("baldosa_pared.png", baldosa10.image())
+        assert.equals(1, jugadorVerde.celdasGanadas())
+        
+        // ANTES: assert.equals(null, baldosa10.duenioActual())
+        // AHORA:
+        assert.equals(vacio, baldosa10.duenioActual())
+
+        jugadorVerde.moverHacia(derecha) // Intenta avanzar a (1,0) pero es pared
+        assert.equals(game.at(0, 0), jugadorVerde.position())
+    }
+
+    test "No se solapan baldosas especiales: solo puede cambiar de tipo desde TipoNormal" {
+        baldosa10.aplicarEfectoSorpresa(new TipoTrampa())
+        assert.notThat(baldosa10.estaDisponible())
+
+        // Intentar transformar una trampa en pared no la modifica
+        baldosa10.aplicarEfectoSorpresa(new TipoPared())
+        assert.that(baldosa10.esPisable())
+        assert.equals("baldosa_troll_neutra.png", baldosa10.image())
+    }
+}
+
+
+describe "Tests de Baldosa Bomba" {
+    const baldosaCentro = new Baldosa(position = game.at(1, 1))
+    const baldosaArriba = new Baldosa(position = game.at(1, 2))
+    const baldosaAbajo = new Baldosa(position = game.at(1, 0))
+    const baldosaIzquierda = new Baldosa(position = game.at(0, 1))
+    const baldosaDerecha = new Baldosa(position = game.at(2, 1))
+
+    method initialize() {
+        game.clear()
+        game.width(10)
+        game.height(11)
+
+        jugadorVerde.position(game.at(0, 1))
+        jugadorVerde.celdasGanadas(0)
+        jugadorAzul.position(game.at(9, 9))
+        jugadorAzul.celdasGanadas(0)
+
+        game.addVisual(baldosaCentro)
+        game.addVisual(baldosaArriba)
+        game.addVisual(baldosaAbajo)
+        game.addVisual(baldosaIzquierda)
+        game.addVisual(baldosaDerecha)
+
+        game.addVisual(jugadorVerde)
+        game.addVisual(jugadorAzul)
+    }
+
+    test "Una baldosa cambia su tipo e imagen al volverse bomba según su color" {
+        assert.equals("baldosa_neutra.png", baldosaCentro.image())
+
+        baldosaCentro.aplicarEfectoSorpresa(new TipoBomba())
+        assert.equals("baldosa_bomba_neutra.png", baldosaCentro.image())
+
+        // Si ya tenía color verde, toma el sprite de bomba verde
+        baldosaAbajo.pintarPara(jugadorVerde)
+        baldosaAbajo.aplicarEfectoSorpresa(new TipoBomba())
+        assert.equals("baldosa_bomba_verde.png", baldosaAbajo.image())
+    }
+
+    test "Al pisar una baldosa bomba, el jugador reclama la baldosa y las 4 adyacentes en patrón de cruz" {
+        baldosaCentro.aplicarEfectoSorpresa(new TipoBomba())
+
+        // Verde avanza desde (0,1) hacia la derecha para pisar la bomba en (1,1)
+        jugadorVerde.moverHacia(derecha)
+
+        // Verificamos que el centro y las 4 adyacentes pertenezcan al jugador verde
+        assert.equals(jugadorVerde, baldosaCentro.duenioActual())
+        assert.equals(jugadorVerde, baldosaArriba.duenioActual())
+        assert.equals(jugadorVerde, baldosaAbajo.duenioActual())
+        assert.equals(jugadorVerde, baldosaIzquierda.duenioActual())
+        assert.equals(jugadorVerde, baldosaDerecha.duenioActual())
+
+        assert.equals("verde", baldosaCentro.color())
+        assert.equals("verde", baldosaArriba.color())
+        assert.equals("verde", baldosaAbajo.color())
+        assert.equals("verde", baldosaIzquierda.color())
+        assert.equals("verde", baldosaDerecha.color())
+
+        // Gana exactamente 5 celdas
+        assert.equals(5, jugadorVerde.celdasGanadas())
+
+        // La baldosa bomba vuelve a ser TipoNormal
+        assert.equals("baldosa_verde.png", baldosaCentro.image())
+    }
+
+    test "Al detonar la bomba, si una celda adyacente era del rival, se la roba descontándole los puntos" {
+        // Azul previamente pintó la baldosa derecha en (2,1)
+        baldosaDerecha.pintarPara(jugadorAzul)
+        assert.equals(1, jugadorAzul.celdasGanadas())
+
+        baldosaCentro.aplicarEfectoSorpresa(new TipoBomba())
+
+        // Verde pisa la bomba en (1,1)
+        jugadorVerde.moverHacia(derecha)
+
+        // Azul pierde la celda y Verde se la apropia
+        assert.equals(0, jugadorAzul.celdasGanadas())
+        assert.equals(5, jugadorVerde.celdasGanadas())
+        assert.equals(jugadorVerde, baldosaDerecha.duenioActual())
+        assert.equals("verde", baldosaDerecha.color())
+    }
+
+    test "Si una celda adyacente a la bomba es pared, la pared no es reclamada ni pintada" {
+        baldosaArriba.aplicarEfectoSorpresa(new TipoPared())
+        baldosaCentro.aplicarEfectoSorpresa(new TipoBomba())
+
+        jugadorVerde.moverHacia(derecha)
+
+        // La pared permanece intacta
+        assert.notThat(baldosaArriba.esPisable())
+        assert.equals("baldosa_pared.png", baldosaArriba.image())
+        assert.equals(vacio, baldosaArriba.duenioActual())
+
+        // Verde solo reclama 4 celdas (centro, abajo, izquierda y derecha)
+        assert.equals(4, jugadorVerde.celdasGanadas())
+    }
+
+    test "Una baldosa bomba en una esquina del mapa pinta únicamente las posiciones adyacentes válidas sin error" {
+        // Configuramos una bomba en esquina (0,0)
+        const baldosa00 = new Baldosa(position = game.at(0, 0))
+        const baldosa01 = new Baldosa(position = game.at(0, 1))
+        const baldosa10 = new Baldosa(position = game.at(1, 0))
+
+        game.clear()
+        game.width(10)
+        game.height(11)
+
+        game.addVisual(baldosa00)
+        game.addVisual(baldosa01)
+        game.addVisual(baldosa10)
+
+        baldosa00.aplicarEfectoSorpresa(new TipoBomba())
+        jugadorVerde.position(game.at(1, 0))
+        jugadorVerde.celdasGanadas(0)
+        game.addVisual(jugadorVerde)
+
+        // Verde se mueve hacia la izquierda a (0,0) donde está la bomba de la esquina
+        jugadorVerde.moverHacia(izquierda)
+
+        // Las posiciones válidas (0,0), (0,1) y (1,0) quedan pintadas
+        assert.equals(jugadorVerde, baldosa00.duenioActual())
+        assert.equals(jugadorVerde, baldosa01.duenioActual())
+        assert.equals(jugadorVerde, baldosa10.duenioActual())
+        assert.equals(3, jugadorVerde.celdasGanadas())
+    }
+
+    test "No se solapan baldosas bomba con otras baldosas especiales" {
+        baldosaCentro.aplicarEfectoSorpresa(new TipoBomba())
+        assert.notThat(baldosaCentro.estaDisponible())
+
+        // Intentar transformar una bomba en trampa no la altera
+        baldosaCentro.aplicarEfectoSorpresa(new TipoTrampa())
+        assert.equals("baldosa_bomba_neutra.png", baldosaCentro.image())
+    }
+}
+
+
+describe "Tests de Baldosa Muerte" {
+    const baldosaMuerte = new Baldosa(position = game.at(1, 1))
+    const baldosaNormalRival = new Baldosa(position = game.at(3, 3))
+    const baldosaTrollRival = new Baldosa(position = game.at(4, 4))
+    const baldosaBombaRival = new Baldosa(position = game.at(5, 5))
+    const baldosaPared = new Baldosa(position = game.at(6, 6))
+
+    method initialize() {
+        game.clear()
+        game.width(10)
+        game.height(11)
+
+        jugadorVerde.position(game.at(0, 1))
+        jugadorVerde.celdasGanadas(0)
+        jugadorAzul.position(game.at(9, 9))
+        jugadorAzul.celdasGanadas(0)
+
+        tablero.baldosas().clear()
+        tablero.agregarBaldosa(baldosaMuerte)
+        tablero.agregarBaldosa(baldosaNormalRival)
+        tablero.agregarBaldosa(baldosaTrollRival)
+        tablero.agregarBaldosa(baldosaBombaRival)
+        tablero.agregarBaldosa(baldosaPared)
+
+        game.addVisual(jugadorVerde)
+        game.addVisual(jugadorAzul)
+    }
+
+    test "Una baldosa cambia su imagen a calavera roja al volverse TipoMuerte sin importar el color previo" {
+        assert.equals("baldosa_neutra.png", baldosaMuerte.image())
+
+        baldosaMuerte.aplicarEfectoSorpresa(new TipoMuerte())
+        assert.equals("baldosa_muerte.png", baldosaMuerte.image())
+    }
+
+    test "Si una baldosa TipoMuerte no es pisada y se desvanece, vuelve a TipoNormal conservando su dueño y color" {
+        baldosaMuerte.pintarPara(jugadorVerde)
+        assert.equals(jugadorVerde, baldosaMuerte.duenioActual())
+        assert.equals("verde", baldosaMuerte.color())
+
+        baldosaMuerte.aplicarEfectoSorpresa(new TipoMuerte())
+        assert.equals("baldosa_muerte.png", baldosaMuerte.image())
+
+        // Se desvanece al no ser pisada
+        baldosaMuerte.desvanecer()
+
+        // Mantiene el dueño y el color verde original
+        assert.equals(jugadorVerde, baldosaMuerte.duenioActual())
+        assert.equals("verde", baldosaMuerte.color())
+        assert.equals("baldosa_verde.png", baldosaMuerte.image())
+    }
+
+    test "Al pisar una baldosa TipoMuerte, elimina todas las baldosas del rival (normales, troll y bombas) volviéndolas neutras" {
+        // Azul pinta sus 3 casillas
+        baldosaNormalRival.pintarPara(jugadorAzul)
+        baldosaTrollRival.pintarPara(jugadorAzul)
+        baldosaBombaRival.pintarPara(jugadorAzul)
+
+        // Asignamos los tipos especiales a las del rival
+        baldosaTrollRival.aplicarEfectoSorpresa(new TipoTrampa())
+        baldosaBombaRival.aplicarEfectoSorpresa(new TipoBomba())
+        baldosaPared.aplicarEfectoSorpresa(new TipoPared())
+
+        assert.equals(3, jugadorAzul.celdasGanadas())
+
+        // Se genera la TipoMuerte en (1,1)
+        baldosaMuerte.aplicarEfectoSorpresa(new TipoMuerte())
+
+        // Verde se mueve a (1,1) y pisa la TipoMuerte
+        jugadorVerde.moverHacia(derecha)
+
+        // El rival pierde todas sus celdas y su puntuación baja a 0
+        assert.equals(0, jugadorAzul.celdasGanadas())
+
+        // Las baldosas del rival se vuelven neutras manteniendo sus tipos especiales
+        assert.equals(vacio, baldosaNormalRival.duenioActual())
+        assert.equals("neutra", baldosaNormalRival.color())
+        assert.equals("baldosa_neutra.png", baldosaNormalRival.image())
+
+        assert.equals(vacio, baldosaTrollRival.duenioActual())
+        assert.equals("neutra", baldosaTrollRival.color())
+        assert.equals("baldosa_troll_neutra.png", baldosaTrollRival.image())
+
+        assert.equals(vacio, baldosaBombaRival.duenioActual())
+        assert.equals("neutra", baldosaBombaRival.color())
+        assert.equals("baldosa_bomba_neutra.png", baldosaBombaRival.image())
+
+        // La pared no fue afectada
+        assert.equals(vacio, baldosaPared.duenioActual())
+        assert.equals("baldosa_pared.png", baldosaPared.image())
+
+        // La baldosa de muerte se pinta para Verde y vuelve a ser TipoNormal
+        assert.equals(jugadorVerde, baldosaMuerte.duenioActual())
+        assert.equals("verde", baldosaMuerte.color())
+        assert.equals("baldosa_verde.png", baldosaMuerte.image())
+        assert.equals(1, jugadorVerde.celdasGanadas())
+    }
+
+    test "No se solapa TipoMuerte con otras baldosas especiales" {
+        baldosaMuerte.aplicarEfectoSorpresa(new TipoMuerte())
+        assert.notThat(baldosaMuerte.estaDisponible())
+
+        // Intentar transformar una TipoMuerte en pared no la modifica
+        baldosaMuerte.aplicarEfectoSorpresa(new TipoPared())
+        assert.equals("baldosa_muerte.png", baldosaMuerte.image())
+    }
+}
+
+
+describe "Tests de Menú y Navegación" {
+    method initialize() {
+        game.clear()
+        game.width(10)
+        game.height(11)
+    }
+
+    test "Al mostrar el menu inicial, el boton empezar tiene la posicion e imagen correcta" {
+        menu.mostrarMenuInicial()
+        assert.equals("boton_empezar.png", botonEmpezar.image())
+        assert.equals(game.at(3, 4), botonEmpezar.position())
+    }
+
+    test "Al accionar el boton empezar, inicia la partida y arranca el juego" {
+        menu.mostrarMenuInicial()
+        botonEmpezar.accionar()
+        assert.that(juego.estaEnCurso())
+        reloj.detener()
+        spawnerDeBaldosas.detener()
+    }
+
+    test "Al terminar el juego, el boton de volver al menu queda disponible en la zona inferior" {
+        juego.iniciarPartida()
+        juego.terminarJuego()
+        assert.equals("boton_volver.png", botonVolverAlMenu.image())
+        assert.equals(game.at(3, 1), botonVolverAlMenu.position())
+    }
+
+    test "Al iniciar la partida, el banner superior negro cubre la fila del reloj" {
+        juego.iniciarPartida()
+        assert.equals("banner_negro.png", bannerNegro.image())
+        assert.equals(game.at(0, 10), bannerNegro.position())
+        reloj.detener()
+        spawnerDeBaldosas.detener()
+    }
+}
+
+

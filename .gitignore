@@ -8,3 +8,7 @@ log
 
 # Dependencies
 node_modules
+
+# Archivos .md locales
+workflow.md
+GEMINI.md

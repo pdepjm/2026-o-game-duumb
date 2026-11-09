@@ -1,5 +1,7 @@
 ### [Nombre del juego]
 
-* Integrante 1
-* Integrante 2
-* Etc...
+* Tiago Perez Rios
+* Juan Cruz Sequeira
+* Pedro Mollura Becerra
+* Valentino Santarone
+* Amadeo Rodriguez
