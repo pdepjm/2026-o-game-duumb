@@ -1,10 +1,15 @@
 import juego.*
 import tablero.*
 
+object vacio{
+    method perderCelda(){}
+}
+
+
 class Baldosa {
     var property color = "neutra"
     var property position
-    var property duenioActual = null
+    var property duenioActual = vacio
     var property tipo = new TipoNormal() // Colaborador polimórfico
 
     method cambiarDuenio(nuevoDuenio) {
@@ -14,14 +19,12 @@ class Baldosa {
 
     method quitarDuenio() {
         self.descontarDuenioAnterior()
-        duenioActual = null
+        duenioActual = vacio
         color = "neutra"
     }
 
     method descontarDuenioAnterior() {
-        if (duenioActual != null) {
-            duenioActual.perderCelda()
-        }
+        duenioActual.perderCelda()
     }
 
     method asignarNuevoDuenio(nuevoDuenio) {
@@ -86,14 +89,13 @@ class TipoTrampa inherits TipoNormal {
     }
 }
 
-class TipoPared inherits TipoNormal {
-    override method esPisable() = false
-    override method admiteEfecto() = false
-    override method imagePara(color) = "baldosa_pared.png"
-    override method tePiso(baldosa, jugador) {}
-    override method aplicarEfectoSorpresa(baldosa, nuevoTipo) {}
-
-    override method alAplicarseEn(baldosa) {
+class TipoPared {
+    method esPisable() = false
+    method admiteEfecto() = false
+    method imagePara(color) = "baldosa_pared.png"
+    method tePiso(baldosa, jugador) {}
+    method aplicarEfectoSorpresa(baldosa, nuevoTipo) {}
+    method alAplicarseEn(baldosa) {
         baldosa.quitarDuenio()
     }
 }

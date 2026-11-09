@@ -175,7 +175,7 @@ describe "Tests de Baldosas Especiales (Trampa y Pared)" {
         assert.equals(jugadorVerde, baldosa10.duenioActual())
     }
 
-    test "Una baldosa de tipo pared no es pisable, bloquea el paso y si tenía dueño le quita el punto" {
+        test "Una baldosa de tipo pared no es pisable, bloquea el paso y si tenía dueño le quita el punto" {
         jugadorVerde.moverHacia(derecha)   // Verde pinta (1,0) -> tiene 1
         jugadorVerde.moverHacia(izquierda) // Verde pinta (0,0) -> tiene 2
         assert.equals(2, jugadorVerde.celdasGanadas())
@@ -186,12 +186,15 @@ describe "Tests de Baldosas Especiales (Trampa y Pared)" {
         assert.notThat(baldosa10.esPisable())
         assert.equals("baldosa_pared.png", baldosa10.image())
         assert.equals(1, jugadorVerde.celdasGanadas())
-        assert.equals(null, baldosa10.duenioActual())
+        
+        // ANTES: assert.equals(null, baldosa10.duenioActual())
+        // AHORA:
+        assert.equals(vacio, baldosa10.duenioActual())
 
         jugadorVerde.moverHacia(derecha) // Intenta avanzar a (1,0) pero es pared
         assert.equals(game.at(0, 0), jugadorVerde.position())
     }
-
+    
     test "No se solapan baldosas especiales: solo puede cambiar de tipo desde TipoNormal" {
         baldosa10.aplicarEfectoSorpresa(new TipoTrampa())
         assert.notThat(baldosa10.estaDisponible())

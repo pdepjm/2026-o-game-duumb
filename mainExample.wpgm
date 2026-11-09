@@ -11,18 +11,6 @@ program JohnParadigmas {
 	game.boardGround("background3.png")
 
 	juego.iniciar()
-
-	// movimiento babosa verde (WASD)
-	keyboard.w().onPressDo({ jugadorVerde.moverHacia(arriba) })
-    keyboard.s().onPressDo({ jugadorVerde.moverHacia(abajo) })
-    keyboard.a().onPressDo({ jugadorVerde.moverHacia(izquierda) })
-    keyboard.d().onPressDo({ jugadorVerde.moverHacia(derecha) })
-    
-    // movimiento babosa azul (flechas)
-    keyboard.up().onPressDo({ jugadorAzul.moverHacia(arriba) })
-    keyboard.down().onPressDo({ jugadorAzul.moverHacia(abajo) })
-    keyboard.left().onPressDo({ jugadorAzul.moverHacia(izquierda) })
-    keyboard.right().onPressDo({ jugadorAzul.moverHacia(derecha) })
 	
 	game.start()
 }

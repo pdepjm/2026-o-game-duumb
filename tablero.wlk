@@ -33,7 +33,7 @@ object tablero {
 }
 
 object cartelFinal {
-    var property image = null
+    var property image = ""
     var property position = game.at(3, 3)
 
     method mostrarEmpate() {

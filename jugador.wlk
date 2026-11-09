@@ -1,10 +1,38 @@
 import tablero.*
 import juego.*
+import wollok.game.*
+
+
+
+class Controles {
+    const teclaArriba
+    const teclaAbajo
+    const teclaIzquierda
+    const teclaDerecha
+    method configurarPara(jugador) {
+        teclaArriba.onPressDo({ jugador.moverHacia(arriba) })
+        teclaAbajo.onPressDo({ jugador.moverHacia(abajo) })
+        teclaIzquierda.onPressDo({ jugador.moverHacia(izquierda) })
+        teclaDerecha.onPressDo({ jugador.moverHacia(derecha) })
+    }
+}
+
+object sinControles {
+    method configurarPara(jugador) {}
+}
+
+
 
 class Jugador {
     var property position
     const property color
     var property celdasGanadas = 0
+    const property controles = sinControles 
+
+    method configurarControles() {
+        controles.configurarPara(self)
+    }
+
     method esBaldosa() = false
 
     method image() = "slime_" + color + ".png"
@@ -49,13 +77,25 @@ class Jugador {
 const jugadorVerde = new Jugador(
     celdasGanadas = 0,
     position = game.at(0,0),
-    color = "verde"
+    color = "verde",
+    controles = new Controles(
+        teclaArriba = keyboard.w(),
+        teclaAbajo = keyboard.s(),
+        teclaIzquierda = keyboard.a(),
+        teclaDerecha = keyboard.d()
+    )
 )
 
 const jugadorAzul = new Jugador(
     celdasGanadas = 0,
     position = game.at(9, 9),
-    color = "azul"
+    color = "azul",
+    controles = new Controles(
+        teclaArriba = keyboard.up(),
+        teclaAbajo = keyboard.down(),
+        teclaIzquierda = keyboard.left(),
+        teclaDerecha = keyboard.right()
+    )
 )
 
 object arriba {

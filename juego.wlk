@@ -4,16 +4,15 @@ import tablero.*
 object juego {
     const jugadores = [jugadorVerde, jugadorAzul]
     const puntajes = [puntajeVerde, puntajeAzul]
-
     method iniciar() {
-
         tablero.crearBaldosas()
-        game.addVisual(jugadorVerde)
-        game.addVisual(jugadorAzul)
-
+        // Agrega a los jugadores y activa sus controles polimórficamente:
+        jugadores.forEach({ jugador => 
+            game.addVisual(jugador)
+            jugador.configurarControles()
+        })
         game.addVisual(reloj)
         reloj.iniciar()
-
         spawnerDeBaldosas.iniciar()
     }
 
