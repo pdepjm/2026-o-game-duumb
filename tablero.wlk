@@ -30,6 +30,16 @@ object tablero {
     method validarPosicion(posicion) {
         return posicion.x().between(0, game.width() - 1) and posicion.y().between(0, game.height() - 2)  
     }
+
+    method neutralizarBaldosasDe(jugador) {
+        self.baldosasDe(jugador).forEach({ b => b.quitarDuenio() })
+    }
+
+    method baldosasDe(jugador) {
+        return self.todasLasBaldosas().filter({ b => b.duenioActual() == jugador })
+    }
+
+    method todasLasBaldosas() = if (baldosas.isEmpty()) game.allVisuals().filter({ obj => obj.esBaldosa() }) else baldosas
 }
 
 object cartelFinal {
@@ -52,17 +62,23 @@ object cartelFinal {
 }
 
 object spawnerDeBaldosas {
-    const tiposEspeciales = [new TipoTrampa(), new TipoPared()]
+    const tiposEspeciales = [new TipoTrampa(), new TipoPared(), new TipoBomba()]
 
     method iniciar() {
         game.onTick(2000, "spawnearBaldosasEspeciales", { self.generarEfectoRandom() })
+        game.onTick(14000, "spawnearBaldosaMuerte", { self.generarMuerte() })
     }
 
     method detener() {
         game.removeTickEvent("spawnearBaldosasEspeciales")
+        game.removeTickEvent("spawnearBaldosaMuerte")
     }
 
     method generarEfectoRandom() {
         tablero.alterarBaldosaAleatoria(tiposEspeciales.anyOne())
+    }
+
+    method generarMuerte() {
+        tablero.alterarBaldosaAleatoria(new TipoMuerte())
     }
 }

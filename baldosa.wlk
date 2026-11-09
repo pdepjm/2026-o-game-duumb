@@ -12,9 +12,15 @@ class Baldosa {
     var property duenioActual = vacio
     var property tipo = new TipoNormal() // Colaborador polimórfico
 
+    method esBaldosa() = true
+
     method cambiarDuenio(nuevoDuenio) {
         self.descontarDuenioAnterior()
         self.asignarNuevoDuenio(nuevoDuenio)
+    }
+
+    method desvanecer() {
+        tipo.desvanecer(self)
     }
 
     method quitarDuenio() {
@@ -60,6 +66,7 @@ class Baldosa {
 }
 
 class TipoNormal {
+    method desvanecer(baldosa) {}
     method esPisable() = true
     method admiteEfecto() = true
     method imagePara(color) = "baldosa_" + color + ".png"
@@ -87,6 +94,62 @@ class TipoTrampa inherits TipoNormal {
     override method aplicarEfectoSorpresa(baldosa, nuevoTipo) {
         // Si ya tiene un efecto especial, no se pisa con otro (sin usar if)
     }
+}
+
+class TipoBomba inherits TipoNormal {
+    override method admiteEfecto() = false
+    override method imagePara(color) = "baldosa_bomba_" + color + ".png"
+
+    override method tePiso(baldosa, jugador) {
+        self.pintarCruz(baldosa, jugador)
+        baldosa.cambiarTipo(new TipoNormal())
+    }
+
+    method posicionesAdyacentes(posicion) = [
+        posicion.up(1),
+        posicion.down(1),
+        posicion.left(1),
+        posicion.right(1)].filter({ pos => tablero.validarPosicion(pos) })
+
+    method pintarBaldosaEn(posicion, jugador) {
+        game.getObjectsIn(posicion)
+            .filter({ obj => obj.esBaldosa() and obj.esPisable() })
+            .forEach({ obj => obj.pintarPara(jugador) })
+    }
+
+    method pintarCruz(baldosa, jugador) {
+        baldosa.pintarPara(jugador)
+        self.posicionesAdyacentes(baldosa.position()).forEach({ pos =>
+            self.pintarBaldosaEn(pos, jugador)
+        })
+    }
+
+    method pintarEnCruz(baldosa, jugador) {
+        self.pintarCruz(baldosa, jugador)
+    }
+    
+    override method aplicarEfectoSorpresa(baldosa, nuevoTipo) {}
+}
+
+class TipoMuerte inherits TipoNormal {
+    override method admiteEfecto() = false
+    override method imagePara(color) = "baldosa_muerte.png"
+
+    override method alAplicarseEn(baldosa) {
+        game.schedule(2000, { baldosa.desvanecer() })
+    }
+
+    override method tePiso(baldosa, jugador) {
+        tablero.neutralizarBaldosasDe(juego.rivalDe(jugador))
+        baldosa.pintarPara(jugador)
+        baldosa.cambiarTipo(new TipoNormal())
+    }
+
+    override method desvanecer(baldosa) {
+        baldosa.cambiarTipo(new TipoNormal())
+    }
+
+    override method aplicarEfectoSorpresa(baldosa, nuevoTipo) {}
 }
 
 class TipoPared {
