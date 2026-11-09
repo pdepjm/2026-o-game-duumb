@@ -2,6 +2,7 @@ import juego.*
 import jugador.*
 import tablero.*
 import baldosa.*
+import menu.*
 
 
 describe "Tests de lógica de Baldosas, Movimiento y Puntuación" {
@@ -361,11 +362,12 @@ describe "Tests de Baldosa Muerte" {
         jugadorAzul.position(game.at(9, 9))
         jugadorAzul.celdasGanadas(0)
 
-        game.addVisual(baldosaMuerte)
-        game.addVisual(baldosaNormalRival)
-        game.addVisual(baldosaTrollRival)
-        game.addVisual(baldosaBombaRival)
-        game.addVisual(baldosaPared)
+        tablero.baldosas().clear()
+        tablero.agregarBaldosa(baldosaMuerte)
+        tablero.agregarBaldosa(baldosaNormalRival)
+        tablero.agregarBaldosa(baldosaTrollRival)
+        tablero.agregarBaldosa(baldosaBombaRival)
+        tablero.agregarBaldosa(baldosaPared)
 
         game.addVisual(jugadorVerde)
         game.addVisual(jugadorAzul)
@@ -450,4 +452,43 @@ describe "Tests de Baldosa Muerte" {
         assert.equals("baldosa_muerte.png", baldosaMuerte.image())
     }
 }
+
+
+describe "Tests de Menú y Navegación" {
+    method initialize() {
+        game.clear()
+        game.width(10)
+        game.height(11)
+    }
+
+    test "Al mostrar el menu inicial, el boton empezar tiene la posicion e imagen correcta" {
+        menu.mostrarMenuInicial()
+        assert.equals("boton_empezar.png", botonEmpezar.image())
+        assert.equals(game.at(3, 4), botonEmpezar.position())
+    }
+
+    test "Al accionar el boton empezar, inicia la partida y arranca el juego" {
+        menu.mostrarMenuInicial()
+        botonEmpezar.accionar()
+        assert.that(juego.estaEnCurso())
+        reloj.detener()
+        spawnerDeBaldosas.detener()
+    }
+
+    test "Al terminar el juego, el boton de volver al menu queda disponible en la zona inferior" {
+        juego.iniciarPartida()
+        juego.terminarJuego()
+        assert.equals("boton_volver.png", botonVolverAlMenu.image())
+        assert.equals(game.at(3, 1), botonVolverAlMenu.position())
+    }
+
+    test "Al iniciar la partida, el banner superior negro cubre la fila del reloj" {
+        juego.iniciarPartida()
+        assert.equals("banner_negro.png", bannerNegro.image())
+        assert.equals(game.at(0, 10), bannerNegro.position())
+        reloj.detener()
+        spawnerDeBaldosas.detener()
+    }
+}
+
 

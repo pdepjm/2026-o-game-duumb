@@ -36,10 +36,13 @@ object tablero {
     }
 
     method baldosasDe(jugador) {
-        return self.todasLasBaldosas().filter({ b => b.duenioActual() == jugador })
+        return baldosas.filter({ b => b.duenioActual() == jugador })
     }
 
-    method todasLasBaldosas() = if (baldosas.isEmpty()) game.allVisuals().filter({ obj => obj.esBaldosa() }) else baldosas
+    method reiniciar() {
+        baldosas.clear()
+        self.crearBaldosas()
+    }
 }
 
 object cartelFinal {

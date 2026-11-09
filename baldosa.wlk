@@ -12,8 +12,6 @@ class Baldosa {
     var property duenioActual = vacio
     var property tipo = new TipoNormal() // Colaborador polimórfico
 
-    method esBaldosa() = true
-
     method cambiarDuenio(nuevoDuenio) {
         self.descontarDuenioAnterior()
         self.asignarNuevoDuenio(nuevoDuenio)
@@ -113,7 +111,7 @@ class TipoBomba inherits TipoNormal {
 
     method pintarBaldosaEn(posicion, jugador) {
         game.getObjectsIn(posicion)
-            .filter({ obj => obj.esBaldosa() and obj.esPisable() })
+            .filter({ obj => obj.esPisable() })
             .forEach({ obj => obj.pintarPara(jugador) })
     }
 

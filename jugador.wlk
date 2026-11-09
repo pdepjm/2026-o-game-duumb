@@ -25,15 +25,19 @@ object sinControles {
 
 class Jugador {
     var property position
+    const posicionInicial = position
     const property color
     var property celdasGanadas = 0
     const property controles = sinControles 
 
+    method reiniciar() {
+        position = posicionInicial
+        celdasGanadas = 0
+    } 
+
     method configurarControles() {
         controles.configurarPara(self)
     }
-
-    method esBaldosa() = false
 
     method image() = "slime_" + color + ".png"
 

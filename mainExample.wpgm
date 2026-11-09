@@ -8,7 +8,7 @@ program JohnParadigmas {
 	game.height(11)
 	game.width(10)
 	game.cellSize(100)
-	game.boardGround("background3.png")
+	game.boardGround("menu.png")
 
 	juego.iniciar()
 	

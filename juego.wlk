@@ -1,13 +1,24 @@
 import jugador.*
 import tablero.*
+import menu.*
+
 
 object juego {
     const jugadores = [jugadorVerde, jugadorAzul]
     const puntajes = [puntajeVerde, puntajeAzul]
+
+    // Se llama una sola vez al arrancar el programa
     method iniciar() {
-        tablero.crearBaldosas()
-        // Agrega a los jugadores y activa sus controles polimórficamente:
+        menu.mostrarMenuInicial()
+    }
+
+    method iniciarPartida() {
+        game.clear()
+        game.boardGround("background3.png")
+        game.addVisual(bannerNegro)
+        tablero.reiniciar()
         jugadores.forEach({ jugador => 
+            jugador.reiniciar()
             game.addVisual(jugador)
             jugador.configurarControles()
         })
@@ -15,16 +26,15 @@ object juego {
         reloj.iniciar()
         spawnerDeBaldosas.iniciar()
     }
-
+    
     method terminarJuego() {
         reloj.detener()
-        self.darGanador()
         spawnerDeBaldosas.detener()
-
-        game.schedule(4000, { game.stop() })
+        self.darGanador()
+        menu.mostrarBotonVolver()
     }
 
-     method darGanador() {
+    method darGanador() {
         if (self.hayEmpate()) {
             cartelFinal.mostrarEmpate()
         } else {
@@ -61,26 +71,27 @@ object juego {
 object reloj {
     var property tiempo = 30
     var property position = game.at(4, 10)
-    method esBaldosa() = false
 
     method text() = if (tiempo > 0) "Tiempo: " + tiempo.toString() else " "
 
     method textColor() = "FFFFFF"
 
     method restarSegundo() {
-    if (tiempo > 0) {
-        tiempo -= 1
-    } else {
-        juego.terminarJuego()
+        if (tiempo > 0) {
+            tiempo -= 1
+        } else {
+            juego.terminarJuego()
+        }
     }
-}
 
     method iniciar() {
+        tiempo = 30
         game.onTick(1000, "cronometro", { self.restarSegundo() })
     }
 
     method detener() {
         game.removeTickEvent("cronometro")
+        tiempo = 0
     }
 }
 
@@ -88,8 +99,6 @@ class Puntaje {
     var property position
     const jugador
     const property textColor
-
-    method esBaldosa() = false
 
     method text() = "puntos" + jugador.color().capitalize() + ": " + jugador.celdasGanadas().toString()
 }
@@ -105,3 +114,11 @@ const puntajeAzul = new Puntaje(
     jugador = jugadorAzul,
     textColor = "1E90FFFF"
 )
+
+object bannerNegro {
+    var property position = game.at(0, 10)
+
+    method image() = "banner_negro.png"
+    method esPisable() = false
+    method tePiso(unJugador) {}
+}
